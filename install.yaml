@@ -59,8 +59,10 @@ pre_install_actions:
 # If you use directories, they must be directories that are managed
 # by this add-on, or removal could remove things that are not owned by it
 project_files:
-  - docker-compose.civicrm-cli-tools.yaml
-  # - commands/web/add-on-command
+  - commands/web/civistrings
+  - commands/web/civix
+  - commands/web/coworker
+  - commands/web/cv
   # - commands/host/add-on-command-host
   # - web-build/Dockerfile.addon-template
   # - some-directory/file1.txt
