@@ -1,0 +1,22 @@
+{
+    "name": "vinaygawade/web",
+    "description": "civicrm-cli-tools-test",
+    "type": "project",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Vinaygawade\\Web\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "John Doe",
+            "email": "nobody@example.com"
+        }
+    ],
+    "config": {
+        "allow-plugins": {
+            "civicrm/composer-downloads-plugin": true
+        }
+    }
+}

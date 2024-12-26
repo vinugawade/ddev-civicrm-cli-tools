@@ -1,0 +1,8 @@
+name: civicrm-cli-tools-test
+type: php
+docroot: ""
+php_version: "8.2"  # Specify PHP version.
+composer_version: "2"  # Specify Composer version.
+router_http_port: 9999  # Port to be used for http (defaults to global configuration, usually 80)
+router_https_port: 9433 # Port for https (defaults to global configuration, usually 443)
+disable_upload_dirs_warning: false  # Disable the warning about insecure upload directories.
