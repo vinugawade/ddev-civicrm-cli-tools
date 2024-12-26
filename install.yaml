@@ -1,6 +1,6 @@
 # Details about the install.yaml file are at https://ddev.readthedocs.io/en/stable/users/extend/additional-services/#sections-and-features-of-ddev-get-add-on-installyaml
 
-name: addon-template
+name: civicrm-cli-tools
 
 # pre_install_actions - list of actions to run before installing the addon.
 # Examples would be removing an extraneous docker volume,
@@ -59,7 +59,7 @@ pre_install_actions:
 # If you use directories, they must be directories that are managed
 # by this add-on, or removal could remove things that are not owned by it
 project_files:
-  - docker-compose.addon-template.yaml
+  - docker-compose.civicrm-cli-tools.yaml
   # - commands/web/add-on-command
   # - commands/host/add-on-command-host
   # - web-build/Dockerfile.addon-template
