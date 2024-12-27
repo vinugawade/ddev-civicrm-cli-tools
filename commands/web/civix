@@ -5,7 +5,7 @@
 ## Usage: civix [flags] [args]
 ## Example: "ddev civix build:zip" or "ddev civix upgrade" or "ddev civix --version"
 ## Aliases: cvx
-## ProjectTypes: drupal,drupal11,drupal10,drupal9,drupal8,drupal7,backdrop,php
+## ProjectTypes: drupal,drupal11,drupal10,drupal9,backdrop,php
 ## ExecRaw: true
 
 if ! command -v civix >/dev/null; then

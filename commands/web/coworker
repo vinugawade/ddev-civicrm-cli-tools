@@ -5,7 +5,7 @@
 ## Usage: coworker [flags] [args]
 ## Example: "ddev coworker list" or "ddev coworker debug" or "ddev coworker --version"
 ## Aliases: cowkr
-## ProjectTypes: drupal,drupal11,drupal10,drupal9,drupal8,drupal7,backdrop,php
+## ProjectTypes: drupal,drupal11,drupal10,drupal9,backdrop,php
 ## ExecRaw: true
 
 if ! command -v coworker >/dev/null; then
