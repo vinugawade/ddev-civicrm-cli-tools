@@ -5,11 +5,10 @@
 ## Usage: coworker [flags] [args]
 ## Example: "ddev coworker list" or "ddev coworker debug" or "ddev coworker --version"
 ## Aliases: cowkr
-## ProjectTypes: drupal,drupal11,drupal10,drupal9,backdrop,php
 ## ExecRaw: true
 
 if ! command -v coworker >/dev/null; then
   echo "coworker is not available. You may need to 'ddev composer require civicrm/cli-tools'"
   exit 1
 fi
-./vendor/bin/coworker "$@"
+coworker "$@"
