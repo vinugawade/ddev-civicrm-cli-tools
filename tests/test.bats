@@ -23,84 +23,38 @@ setup() {
   ddev composer require 'civicrm/cli-tools' --no-interaction --no-progress --prefer-dist
 }
 
+# A reusable function to test a binary's availability
+check_binary() {
+  local binary=$1
+  local alias=$2
+
+  echo "🔄 Checking ddev $binary version using alias..." >&3
+  if ! ddev "$alias" --version; then
+    echo "❌ ddev $binary failed" >&3
+    exit 1
+  fi
+
+  # Simulate renaming the binary to ensure the alias resolves correctly
+  mv "./vendor/bin/$binary" "./vendor/bin/$binary-removed"
+  echo "🔄 Checking if $binary command is available..." >&3
+  if ddev exec command -v "$binary" >/dev/null; then
+    echo "❌ $binary is still available but should have been removed!" >&3
+    # Restore binary
+    mv "./vendor/bin/$binary-removed" "./vendor/bin/$binary"
+    exit 1
+  fi
+  # Restore binary
+  mv "./vendor/bin/$binary-removed" "./vendor/bin/$binary"
+}
+
 health_checks() {
   set -eu -o pipefail
 
-  # Check ddev cv version
-  echo "🔄 Checking ddev cv version using alias..." >&3
-  if ! ddev cv --version; then
-    echo "❌ ddev cv failed" >&3
-    exit 1
-  fi
-
-  # Simulate renaming the cv command to cv-removed
-  mv ./vendor/bin/cv ./vendor/bin/cv-removed
-  echo "🔄 Checking if cv command is available..." >&3
-  if ddev exec command -v cv >/dev/null; then
-    echo "❌ cv is still available but should have been removed!" >&3
-    # Restore cv
-    mv ./vendor/bin/cv-removed ./vendor/bin/cv
-    exit 1
-  fi
-  # Restore cv
-  mv ./vendor/bin/cv-removed ./vendor/bin/cv
-
-  # Check ddev civix version
-  echo "🔄 Checking ddev civix version using alias..." >&3
-  if ! ddev cvx --version; then
-    echo "❌ ddev civix failed" >&3
-    exit 1
-  fi
-
-  # Simulate renaming civix to civix-removed
-  mv ./vendor/bin/civix ./vendor/bin/civix-removed
-  echo "🔄 Checking if civix command is available..." >&3
-  if ddev exec command -v civix >/dev/null; then
-    echo "❌ civix is still available but should have been removed!" >&3
-    # Restore civix
-    mv ./vendor/bin/civix-removed ./vendor/bin/civix
-    exit 1
-  fi
-  # Restore civix
-  mv ./vendor/bin/civix-removed ./vendor/bin/civix
-
-  # Check ddev civistrings version
-  echo "🔄 Checking ddev civistrings version using alias..." >&3
-  if ! ddev cvstr --version; then
-    echo "❌ ddev civistrings failed" >&3
-    exit 1
-  fi
-
-  # Simulate renaming civistrings to civistrings-removed
-  mv ./vendor/bin/civistrings ./vendor/bin/civistrings-removed
-  echo "🔄 Checking if civistrings command is available..." >&3
-  if ddev exec command -v civistrings >/dev/null; then
-    echo "❌ civistrings is still available but should have been removed!" >&3
-    # Restore civistrings
-    mv ./vendor/bin/civistrings-removed ./vendor/bin/civistrings
-    exit 1
-  fi
-  # Restore civistrings
-  mv ./vendor/bin/civistrings-removed ./vendor/bin/civistrings
-
-  # Check ddev coworker version
-  echo "🔄 Checking ddev coworker version using alias..." >&3
-  if ! ddev cowkr --version; then
-    echo "❌ ddev coworker failed" >&3
-    exit 1
-  fi
-
-  # Simulate renaming coworker to coworker-removed
-  mv ./vendor/bin/coworker ./vendor/bin/coworker-removed
-  echo "🔄 Checking if coworker command is available..." >&3
-  if ddev exec command -v coworker >/dev/null; then
-    echo "❌ coworker is still available but should have been removed!" >&3
-    # Restore coworker
-    mv ./vendor/bin/coworker-removed ./vendor/bin/coworker
-    exit 1
-  fi
-  # Restore coworker
-  mv ./vendor/bin/coworker-removed ./vendor/bin/coworker
+  # Perform binary checks for all required binaries
+  check_binary "cv" "cv"
+  check_binary "civix" "cvx"
+  check_binary "civistrings" "cvstr"
+  check_binary "coworker" "cowkr"
 
   # All checks passed, print a success message
   echo "✅ All health checks passed successfully!" >&3
