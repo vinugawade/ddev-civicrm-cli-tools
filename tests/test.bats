@@ -9,8 +9,8 @@ setup() {
 
 initialize_environment() {
   export DIR="$( cd "$( dirname "$BATS_TEST_FILENAME" )" >/dev/null 2>&1 && pwd )/.."
-  export TESTDIR=~/tmp/civicrm-cli-tools
-  export PROJNAME=civicrm-cli-tools
+  export TESTDIR=~/tmp/ddev-civicrm-cli-tools
+  export PROJNAME=ddev-civicrm-cli-tools
   export DDEV_NONINTERACTIVE=true
   mkdir -p $TESTDIR
 }
@@ -100,9 +100,9 @@ teardown() {
 @test "install from release 🚀" {
   set -eu -o pipefail
   cd ${TESTDIR} || ( printf "❌ Unable to cd to ${TESTDIR}\n" >&3 && exit 1 )
-  echo "⬇️  ddev add-on get vinugawade/civicrm-cli-tools" >&3
-  ddev add-on get vinugawade/civicrm-cli-tools
+  echo "⬇️  ddev add-on get vinugawade/ddev-civicrm-cli-tools" >&3
+  ddev add-on get vinugawade/ddev-civicrm-cli-tools
   ddev restart >/dev/null
   health_checks
-  ddev add-on remove vinugawade/civicrm-cli-tools
+  ddev add-on remove vinugawade/ddev-civicrm-cli-tools
 }

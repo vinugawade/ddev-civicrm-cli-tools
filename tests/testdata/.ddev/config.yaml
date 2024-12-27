@@ -1,4 +1,4 @@
-name: civicrm-cli-tools-test
+name: ddev-civicrm-cli-tools-test
 type: php
 docroot: ""
 php_version: "8.2"  # Specify PHP version.
