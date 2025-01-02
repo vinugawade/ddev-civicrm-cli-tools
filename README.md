@@ -1,4 +1,5 @@
 # 🚀 DDEV CiviCRM CLI Tools Add-on
+[![Tests for `ddev-civicrm-cli-tools`](https://github.com/vinugawade/ddev-civicrm-cli-tools/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/vinugawade/ddev-civicrm-cli-tools/actions/workflows/tests.yml)
 
 This DDEV add-on provides seamless integration of essential CiviCRM CLI tools within your DDEV-managed projects. The add-on simplifies the use of tools like `civistrings`, `civix`, `coworker`, and `cv`, enhancing the developer experience for CiviCRM projects integrated with CMS platforms such as Drupal and Backdrop.
 

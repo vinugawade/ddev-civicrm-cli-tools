@@ -1,4 +1,4 @@
-name: tests for `ddev-civicrm-cli-tools`
+name: Tests for `ddev-civicrm-cli-tools`
 on:
   pull_request:
   push:
