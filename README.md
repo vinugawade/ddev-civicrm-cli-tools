@@ -13,8 +13,6 @@ This DDEV add-on provides seamless integration of essential CiviCRM CLI tools wi
 - [Maintainer](#maintainer)
 - [Acknowledgments](#acknowledgments)
 
----
-
 ## Features
 
 - **Simplified Command Execution**: Easily run CiviCRM CLI tools directly through DDEV commands.
@@ -22,8 +20,6 @@ This DDEV add-on provides seamless integration of essential CiviCRM CLI tools wi
 - **Error Handling**: Provides clear and actionable error messages for missing dependencies or setup issues.
 - **Tested Environment**: Includes automated BATS tests to validate functionality, ensuring stability and reliability.
 - **Support for Multi-Context Projects**: Works across local development and production environments with minimal configuration.
-
----
 
 ## Installation
 
