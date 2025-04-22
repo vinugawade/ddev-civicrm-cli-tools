@@ -3,7 +3,7 @@ name: Tests for `ddev-civicrm-cli-tools`
 on:
   pull_request:
   push:
-    branches: [ main ]
+    branches: [main]
   schedule:
     - cron: '25 08 * * *'
   workflow_dispatch:
