@@ -1,12 +1,11 @@
 name: Tests for `ddev-civicrm-cli-tools`
+
 on:
   pull_request:
   push:
     branches: [ main ]
-
   schedule:
-  - cron: '25 08 * * *'
-
+    - cron: '25 08 * * *'
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -19,7 +18,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# This is required for "gautamkrishnar/keepalive-workflow", see "ddev/github-action-add-on-test"
 permissions:
   actions: write
 
@@ -33,6 +31,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Prevent GitHub workflow timeout
+        uses: gautamkrishnar/keepalive-workflow@v2
+
       - uses: ddev/github-action-add-on-test@v2
         with:
           ddev_version: ${{ matrix.ddev_version }}
