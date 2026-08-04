@@ -64,7 +64,7 @@ project_files:
   - commands/web/coworker
   - commands/web/cv
   # - commands/host/add-on-command-host
-  # - web-build/Dockerfile.addon-template
+  # - web-build/Dockerfile.ddev-civicrm-cli-tools
   # - some-directory/file1.txt
   # - some-directory/file2.txt
   # - extra_files_dir_created_by_this_template/
@@ -84,7 +84,7 @@ global_files:
 # See https://github.com/Masterminds/semver#checking-version-constraints for constraint rules.
 # Available with DDEV v1.23.4+, and works only for DDEV v1.23.4+ binaries
 # example: ddev_version_constraint: '>= v1.23.4'
-ddev_version_constraint: ''
+ddev_version_constraint: '>= v1.24.10'
 
 # List of add-on names that this add-on depends on
 dependencies:
@@ -95,7 +95,7 @@ dependencies:
 post_install_actions:
   # - chmod +x ~/.ddev/commands/web/somecommand
   # - touch ${DDEV_APPROOT}/somefile.${GOOS}.${DDEV_WEBSERVER}
-  # - perl -pi -e 's/oldstring/newstring/g' ${DDEV_APPROOT}/.ddev/docker-compose.addon-template.yaml
+  # - perl -pi -e 's/oldstring/newstring/g' ${DDEV_APPROOT}/.ddev/docker-compose.ddev-civicrm-cli-tools.yaml
 
 # Shell actions that can be done during removal of the add-on.
 # Files listed in project_files section will be automatically removed here if they contain #ddev-generated line.
@@ -103,11 +103,11 @@ post_install_actions:
 removal_actions:
   # - rm ~/.ddev/commands/web/somecommand
   # - |
-  #   if [ -f ${DDEV_APPROOT}/.ddev/docker-compose.addon-template_extras.yaml ]; then
-  #     if grep -q '#ddev-generated' ${DDEV_APPROOT}/.ddev/docker-compose.addon-template_extras.yaml; then
-  #       rm -f ${DDEV_APPROOT}/.ddev/docker-compose.addon-template_extras.yaml
+  #   if [ -f ${DDEV_APPROOT}/.ddev/docker-compose.ddev-civicrm-cli-tools_extras.yaml ]; then
+  #     if grep -q '#ddev-generated' ${DDEV_APPROOT}/.ddev/docker-compose.ddev-civicrm-cli-tools_extras.yaml; then
+  #       rm -f ${DDEV_APPROOT}/.ddev/docker-compose.ddev-civicrm-cli-tools_extras.yaml
   #     else
-  #       echo "Unwilling to remove '${DDEV_APPROOT}/.ddev/docker-compose.addon-template_extras.yaml' because it does not have #ddev-generated in it; you can manually delete it if it is safe to delete."
+  #       echo "Unwilling to remove '${DDEV_APPROOT}/.ddev/docker-compose.ddev-civicrm-cli-tools_extras.yaml' because it does not have #ddev-generated in it; you can manually delete it if it is safe to delete."
   #     fi
   #   fi
 

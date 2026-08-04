@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an improvement for this add-on.
+labels: [enhancement]
+body:
+  - type: checkboxes
+    attributes:
+      label: Existing requests
+      description: Please search existing issues before submitting a new request.
+      options:
+        - label: I have searched the existing issues
+          required: true
+  - type: textarea
+    attributes:
+      label: Problem
+      description: Describe the problem or limitation this feature would address.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposed solution
+      description: Describe the behavior you would like.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Alternatives
+      description: Describe any alternatives you considered.
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: Add examples, links, or screenshots that clarify the request.
+    validations:
+      required: false

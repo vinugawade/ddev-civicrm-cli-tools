@@ -2,8 +2,12 @@ name: Tests for `ddev-civicrm-cli-tools`
 
 on:
   pull_request:
+    paths-ignore:
+      - "**.md"
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
 
   schedule:
     - cron: "25 08 * * *"
@@ -20,15 +24,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# This is required for "gautamkrishnar/keepalive-workflow", see "ddev/github-action-add-on-test"
 permissions:
-  actions: write
+  contents: read
 
 jobs:
   tests:
     strategy:
       matrix:
-        ddev_version: [stable]
+        ddev_version: [stable, HEAD]
       fail-fast: false
 
     runs-on: ubuntu-latest
