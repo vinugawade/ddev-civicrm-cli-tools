@@ -5,44 +5,54 @@
 
 # DDEV CiviCRM CLI Tools Add-on
 
-This DDEV add-on provides project commands for the CiviCRM CLI tools distributed by [`civicrm/cli-tools`](https://github.com/civicrm/civicrm-cli-tools):
+## Overview
 
-- `cv` for CiviCRM administration and development tasks
-- `civix` for CiviCRM extension development
-- `civistrings` for extracting translatable strings
-- `coworker` for running background jobs
+This add-on provides project-level [DDEV web-container commands](https://docs.ddev.com/en/stable/users/extend/custom-commands/) for the CiviCRM command-line tools distributed by [`civicrm/cli-tools`](https://github.com/civicrm/civicrm-cli-tools).
 
-The add-on installs lightweight DDEV command wrappers. It does not install CiviCRM or the CLI tools package itself.
+| DDEV command | Alias | Tool | Purpose |
+| --- | --- | --- | --- |
+| `ddev cv` | — | `cv` | Administer, inspect, and develop a CiviCRM installation |
+| `ddev civix` | `ddev cvx` | `civix` | Develop and maintain CiviCRM extensions |
+| `ddev civistrings` | `ddev cvstr` | `civistrings` | Extract translatable strings into gettext templates |
+| `ddev coworker` | `ddev cowkr` | `coworker` | Run and inspect CiviCRM worker processes |
+
+The add-on installs lightweight command wrappers in the project's `.ddev` directory. It does not install CiviCRM or `civicrm/cli-tools` itself.
 
 ## Features
 
-- Run the CiviCRM tools through consistent `ddev` commands.
+- Run the supported CiviCRM CLI tools through consistent `ddev` commands.
 - Use short aliases for `civix`, `civistrings`, and `coworker`.
-- Get a clear error when `civicrm/cli-tools` is unavailable.
-- Test the add-on against both stable DDEV and DDEV HEAD.
-- Use the wrappers in Composer-based CiviCRM projects. The underlying tools retain their own CMS and bootstrap requirements.
+- Forward command arguments, output, signals, and exit codes to the underlying tools.
+- Receive a clear error when a required `vendor/bin` executable is unavailable.
+- Use project-local Composer dependencies instead of global CLI installations.
+- Validate changes against stable DDEV, with DDEV HEAD retained as a scheduled/manual canary.
 
 ## Requirements
 
 - DDEV v1.24.10 or newer
+- A configured DDEV project
 - Composer available in the DDEV web container
 - A Composer-based project in which `civicrm/cli-tools` can be installed
-- A working CiviCRM installation for commands that need to bootstrap CiviCRM
+- A working CiviCRM installation for commands that bootstrap CiviCRM
+
+The wrappers are CMS-neutral. Actual CMS, PHP, and CiviCRM compatibility is determined by CiviCRM and the individual upstream CLI tools.
 
 ## Installation
 
-Install the add-on from the DDEV Add-on Registry:
+Run these commands from the DDEV project root:
 
 ```bash
 ddev add-on get vinugawade/ddev-civicrm-cli-tools
 ddev restart
 ```
 
-Install the real CiviCRM CLI tools in the project:
+Install the CiviCRM CLI tools as a development dependency:
 
 ```bash
-ddev composer require civicrm/cli-tools
+ddev composer require --dev civicrm/cli-tools
 ```
+
+Omit `--dev` only when the project intentionally manages these tools as a regular production dependency.
 
 Verify the installation:
 
@@ -53,37 +63,90 @@ ddev civistrings --version
 ddev coworker --version
 ```
 
-Commit the resulting `.ddev` changes and the Composer changes according to your project's dependency policy.
+After installation, commit the generated `.ddev` files together with the appropriate Composer files according to the project's dependency policy:
+
+```bash
+git add .ddev composer.json composer.lock
+```
+
+### Install a specific add-on release
+
+To install a specific release instead of the latest stable release:
+
+```bash
+ddev add-on get vinugawade/ddev-civicrm-cli-tools --version v1.0.2
+ddev restart
+```
+
+## Updating
+
+Update the add-on to its latest stable release:
+
+```bash
+ddev add-on get vinugawade/ddev-civicrm-cli-tools
+ddev restart
+```
+
+The add-on and the Composer package are versioned independently. Update the CiviCRM CLI tools separately when required:
+
+```bash
+ddev composer update civicrm/cli-tools --with-dependencies
+```
+
+Review and commit the resulting `.ddev`, `composer.json`, and `composer.lock` changes.
+
+## Listing and removing the add-on
+
+List add-ons installed in the current project:
+
+```bash
+ddev add-on list --installed
+```
+
+Remove this add-on:
+
+```bash
+ddev add-on remove ddev-civicrm-cli-tools
+ddev restart
+```
+
+Removing the add-on deletes its DDEV wrappers but does not automatically remove the Composer package. Remove that separately when it is no longer needed:
+
+```bash
+ddev composer remove civicrm/cli-tools
+```
 
 ## Usage
 
-| DDEV command | Alias | Purpose |
-| --- | --- | --- |
-| `ddev cv` | `ddev cv` | Run the `cv` command |
-| `ddev civix` | `ddev cvx` | Run the `civix` command |
-| `ddev civistrings` | `ddev cvstr` | Run the `civistrings` command |
-| `ddev coworker` | `ddev cowkr` | Run the `coworker` command |
+Pass any supported upstream arguments after the DDEV command. Use `--help` to inspect the options provided by each tool.
 
 ### `cv`
 
 ```bash
+ddev cv --help
 ddev cv status
 ddev cv flush
 ddev cv updb
 ddev cv api4 Contact.get +l 1
 ```
 
+Commands such as `status`, `flush`, `updb`, and `api4` require `cv` to locate and bootstrap a valid CiviCRM installation.
+
 ### `civix`
 
 ```bash
+ddev civix --help
+ddev civix civicrm:ping
 ddev civix build:zip
-ddev civix upgrade
 ddev cvx --version
 ```
+
+Run extension-specific commands from an appropriate extension directory when required by `civix`.
 
 ### `civistrings`
 
 ```bash
+ddev civistrings --help
 ddev civistrings -o my-extension.pot path/to/extension
 ddev cvstr --version
 ```
@@ -91,50 +154,107 @@ ddev cvstr --version
 ### `coworker`
 
 ```bash
-ddev coworker list
-ddev coworker debug
+ddev coworker --help
+ddev coworker --version
 ddev cowkr --version
 ```
 
+## How it works
+
+The add-on installs command scripts under `.ddev/commands/web`. DDEV executes these scripts inside the project's web container, where they call the corresponding executable from the project's Composer `vendor/bin` directory.
+
+This keeps the tools project-specific and avoids relying on global host installations.
+
 ## Troubleshooting
 
-When a wrapper reports that a command is unavailable, confirm that the package and Composer binaries exist:
+### Confirm that the add-on is installed
+
+```bash
+ddev add-on list --installed
+ddev restart
+```
+
+If installation or updating fails, rerun it with verbose output:
+
+```bash
+ddev add-on get vinugawade/ddev-civicrm-cli-tools --verbose
+```
+
+### Confirm that the Composer package and binaries exist
 
 ```bash
 ddev composer show civicrm/cli-tools
-ddev exec ls -la vendor/bin/cv vendor/bin/civix vendor/bin/civistrings vendor/bin/coworker
+ddev exec ls -la \
+  vendor/bin/cv \
+  vendor/bin/civix \
+  vendor/bin/civistrings \
+  vendor/bin/coworker
 ```
 
-Then reinstall dependencies if required:
+If the package is installed under `require-dev`, a Composer install using `--no-dev` will intentionally omit these binaries. Restore the local development dependencies with:
 
 ```bash
 ddev composer install
 ddev restart
 ```
 
-A successful `--version` check verifies the CLI binary and DDEV wrapper. Commands such as `cv status`, `cv flush`, and `cv updb` additionally require a valid CiviCRM installation that `cv` can bootstrap.
+### Separate wrapper problems from CiviCRM bootstrap problems
 
-## Testing
-
-The BATS suite installs the real `civicrm/cli-tools` package, installs the add-on, verifies every primary command and alias, and checks the missing-binary error behavior. It does not use fake fallback binaries.
-
-Install `bats-core`, `bats-assert`, `bats-file`, and `bats-support`, then run from the repository root:
+A successful version check confirms that the add-on wrapper can execute the installed CLI binary:
 
 ```bash
-bats ./tests/test.bats
+ddev cv --version
 ```
 
-Exclude the released-add-on test during local development:
+A command such as the following additionally verifies that `cv` can find and bootstrap CiviCRM:
+
+```bash
+ddev cv status
+```
+
+When `--version` succeeds but `status` fails, investigate the CiviCRM/CMS installation, document root, settings files, permissions, and upstream tool requirements rather than reinstalling the add-on.
+
+## Development and testing
+
+The BATS suite installs the real `civicrm/cli-tools` package, downloads the official tool PHARs, installs the add-on, verifies every primary command and alias, and tests missing-binary error handling. It does not use fake fallback binaries.
+
+### Local test prerequisites
+
+On macOS or Linux with Homebrew:
+
+```bash
+brew tap bats-core/bats-core
+brew install \
+  bats-core \
+  bats-core/bats-core/bats-assert \
+  bats-core/bats-core/bats-file \
+  bats-core/bats-core/bats-support \
+  jq
+```
+
+Run the current-directory add-on test during development:
 
 ```bash
 bats ./tests/test.bats --filter-tags '!release'
 ```
 
-Check alignment with the current DDEV add-on template:
+Run the complete suite, including installation from the latest published release:
 
 ```bash
-curl -fsSL https://ddev.com/s/addon-update-checker.sh | bash
+bats ./tests/test.bats
 ```
+
+Check the repository against the current DDEV add-on template and maintenance rules:
+
+```bash
+ddev utility addon-update-checker
+```
+
+### Continuous integration
+
+- Stable DDEV is the required test for pull requests and pushes to `main`.
+- DDEV HEAD runs as a scheduled/manual, nonblocking canary with a bounded timeout.
+- Release-tagged BATS coverage verifies installation from the published add-on release.
 
 ## Repository structure
 
@@ -143,12 +263,14 @@ curl -fsSL https://ddev.com/s/addon-update-checker.sh | bash
 ├── .github
 │   ├── ISSUE_TEMPLATE
 │   ├── PULL_REQUEST_TEMPLATE.md
-│   └── workflows/tests.yml
-├── commands/web
-│   ├── civistrings
-│   ├── civix
-│   ├── coworker
-│   └── cv
+│   └── workflows
+│       └── tests.yml
+├── commands
+│   └── web
+│       ├── civistrings
+│       ├── civix
+│       ├── coworker
+│       └── cv
 ├── tests
 │   ├── test.bats
 │   └── testdata
@@ -161,7 +283,13 @@ curl -fsSL https://ddev.com/s/addon-update-checker.sh | bash
 
 ## Contributing
 
-Contributions are welcome. Create a branch, add or update tests for behavioral changes, run the BATS suite and update checker, and open a pull request.
+Contributions are welcome.
+
+- Create a focused branch.
+- Add or update tests for behavioral changes.
+- Run the focused BATS test, the complete suite when appropriate, and `ddev utility addon-update-checker`.
+- Update documentation when command behavior or requirements change.
+- Open a pull request with a clear summary and verification results.
 
 ## Maintainer
 
@@ -173,4 +301,4 @@ Contributions are welcome. Create a branch, add or update tests for behavioral c
 
 ## Acknowledgments
 
-Thanks to the CiviCRM and DDEV communities for maintaining the underlying tools, documentation, and add-on ecosystem.
+Thanks to the CiviCRM and DDEV communities for maintaining the underlying tools, documentation, testing infrastructure, and add-on ecosystem.
