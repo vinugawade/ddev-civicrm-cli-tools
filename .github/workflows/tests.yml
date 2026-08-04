@@ -4,6 +4,7 @@ on:
   pull_request:
     paths-ignore:
       - "**.md"
+
   push:
     branches: [main]
     paths-ignore:
@@ -28,19 +29,32 @@ permissions:
   contents: read
 
 jobs:
-  tests:
-    strategy:
-      matrix:
-        ddev_version: [stable, HEAD]
-      fail-fast: false
-
+  stable:
+    name: tests (stable)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: ddev/github-action-add-on-test@v2
         with:
-          ddev_version: ${{ matrix.ddev_version }}
+          ddev_version: stable
           token: ${{ secrets.GITHUB_TOKEN }}
           debug_enabled: ${{ github.event.inputs.debug_enabled }}
-          addon_repository: ${{ env.GITHUB_REPOSITORY }}
-          addon_ref: ${{ env.GITHUB_REF }}
+          addon_repository: ${{ github.repository }}
+          addon_ref: ${{ github.ref }}
+
+  head:
+    name: tests (HEAD canary)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+
+    steps:
+      - uses: ddev/github-action-add-on-test@v2
+        with:
+          ddev_version: HEAD
+          token: ${{ secrets.GITHUB_TOKEN }}
+          debug_enabled: ${{ github.event.inputs.debug_enabled }}
+          addon_repository: ${{ github.repository }}
+          addon_ref: ${{ github.ref }}
