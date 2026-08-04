@@ -3,12 +3,12 @@
 #ddev-generated
 ## Description: Run cv CLI inside the web container
 ## Usage: cv [flags] [args]
-## Example: "ddev cv flush" or "ddev cv upgrade:db" or "ddev cv --version"
+## Example: "ddev cv flush" or "ddev cv updb" or "ddev cv --version"
 ## Aliases: cv
 ## ExecRaw: true
 
 if ! command -v cv >/dev/null; then
-  echo "cv is not available. You may need to 'ddev composer require civicrm/cli-tools'"
+  echo "cv is not available. You may need to 'ddev composer require civicrm/cli-tools'" >&2
   exit 1
 fi
-cv "$@"
+exec cv "$@"

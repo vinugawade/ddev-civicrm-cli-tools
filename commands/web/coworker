@@ -8,7 +8,7 @@
 ## ExecRaw: true
 
 if ! command -v coworker >/dev/null; then
-  echo "coworker is not available. You may need to 'ddev composer require civicrm/cli-tools'"
+  echo "coworker is not available. You may need to 'ddev composer require civicrm/cli-tools'" >&2
   exit 1
 fi
-coworker "$@"
+exec coworker "$@"

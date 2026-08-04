@@ -1,192 +1,195 @@
+#!/usr/bin/env bats
+
+# Run from the add-on root with: bats ./tests/test.bats
+# Exclude release tests with: bats ./tests/test.bats --filter-tags '!release'
+
+export GITHUB_REPO=vinugawade/ddev-civicrm-cli-tools
+
+TEST_BREW_PREFIX="$(brew --prefix 2>/dev/null || true)"
+export BATS_LIB_PATH="${BATS_LIB_PATH:-}:${TEST_BREW_PREFIX}/lib:/usr/lib/bats"
+
+bats_load_library bats-assert
+bats_load_library bats-file
+bats_load_library bats-support
+
+export DIR="$(cd "$(dirname "${BATS_TEST_FILENAME}")/.." >/dev/null 2>&1 && pwd)"
+export PROJNAME="test-$(basename "${GITHUB_REPO}")"
+
+mkdir -p "${HOME}/tmp"
+export TESTDIR="$(mktemp -d "${HOME}/tmp/${PROJNAME}.XXXXXX")"
+
+export DDEV_NONINTERACTIVE=true
+export DDEV_NO_INSTRUMENTATION=true
+export BATS_TEST_TIMEOUT=900
+
+run_ddev() {
+  run ddev "$@" 3>&-
+}
+
 setup() {
   set -eu -o pipefail
-  initialize_environment
-  cleanup_project
-  prepare_test_data
-  start_ddev_environment
+
+  ddev delete -Oy "${PROJNAME}" 3>&- >/dev/null 2>&1 || true
+  prepare_test_project
+  start_ddev_project
   install_cli_tools
 }
 
-initialize_environment() {
-  export DIR="$(cd "$(dirname "$BATS_TEST_FILENAME")" >/dev/null 2>&1 && pwd)/.."
-  export TESTDIR=~/tmp/ddev-civicrm-cli-tools
-  export PROJNAME=ddev-civicrm-cli-tools
-  export DDEV_NONINTERACTIVE=true
-
+prepare_test_project() {
+  rm -rf "${TESTDIR}"
   mkdir -p "${TESTDIR}"
-}
-
-cleanup_project() {
-  echo "🗑️  Deleting existing project if any..." >&3
-  ddev delete -Oy "${PROJNAME}" >/dev/null 2>&1 || true
-}
-
-prepare_test_data() {
-  echo "📂 Copying test data to ${TESTDIR}..." >&3
-  rm -rf "${TESTDIR:?}/"*
-  cp -r "${DIR}/tests/testdata/." "${TESTDIR}/"
+  cp -R "${DIR}/tests/testdata/." "${TESTDIR}/"
   cd "${TESTDIR}"
 
-  # Avoid DDEV warning about missing web entry point.
-  if [ ! -f index.php ] && [ ! -f index.html ]; then
+  if [[ ! -f index.php && ! -f index.html ]]; then
     echo "<?php echo 'DDEV CiviCRM CLI Tools test project';" > index.php
   fi
+
+  run_ddev config --project-name="${PROJNAME}" --project-tld=ddev.site
+  assert_success
 }
 
-start_ddev_environment() {
-  echo "🚀 Starting DDEV environment..." >&3
-  ddev start -y >/dev/null
+start_ddev_project() {
+  run_ddev start -y
+  assert_success
 }
 
 install_cli_tools() {
-  echo "📦 Installing 'civicrm/cli-tools' with retry..." >&3
+  local artifact
+  local url
 
-  local max_attempts=3
-  local attempt=1
+  echo "Installing civicrm/cli-tools..." >&3
 
-  while [ "${attempt}" -le "${max_attempts}" ]; do
-    echo "Composer install attempt ${attempt}/${max_attempts}..." >&3
+  # Composer 2.9+ may force HTTP/3 for the extra PHAR downloads. The
+  # storage redirect intermittently returns curl error 95 in GitHub Actions,
+  # so install the real package without plugins and fetch its real PHARs with
+  # curl over HTTP/1.1.
+  run_ddev composer require \
+    civicrm/cli-tools \
+    --no-interaction \
+    --no-progress \
+    --prefer-dist \
+    --no-plugins
+  assert_success
 
-    if ddev composer require 'civicrm/cli-tools' --no-interaction --no-progress --prefer-dist; then
-      echo "✅ civicrm/cli-tools installed successfully with Composer." >&3
-      return 0
-    fi
+  run_ddev exec --raw mkdir -p vendor/civicrm/cli-tools/extern
+  assert_success
 
-    echo "⚠️ Composer install failed on attempt ${attempt}/${max_attempts}." >&3
+  for artifact in cv.phar civix.phar coworker.phar civistrings.phar; do
+    run_ddev exec --raw php -r \
+      '$config = json_decode(file_get_contents("vendor/civicrm/cli-tools/composer.json"), true, 512, JSON_THROW_ON_ERROR); echo $config["extra"]["downloads"][$argv[1]]["url"];' \
+      "${artifact}"
+    assert_success
+    url="${output}"
 
-    if [ "${attempt}" -lt "${max_attempts}" ]; then
-      echo "🧹 Clearing Composer cache before retry..." >&3
-      ddev composer clear-cache || true
-      sleep 10
-    fi
+    echo "Downloading ${artifact} over HTTP/1.1..." >&3
+    run_ddev exec --raw curl \
+      --http1.1 \
+      --fail \
+      --location \
+      --silent \
+      --show-error \
+      --retry 3 \
+      --retry-all-errors \
+      --retry-delay 2 \
+      --connect-timeout 10 \
+      --max-time 120 \
+      "${url}" \
+      --output "vendor/civicrm/cli-tools/extern/${artifact}"
+    assert_success
 
-    attempt=$((attempt + 1))
+    run_ddev exec --raw chmod +x "vendor/civicrm/cli-tools/extern/${artifact}"
+    assert_success
   done
-
-  echo "⚠️ Composer failed after ${max_attempts} attempts." >&3
-  echo "📦 Falling back to fake test binaries for CI only..." >&3
-
-  create_fake_cli_tools
 }
 
-create_fake_cli_tools() {
-  mkdir -p vendor/bin
-
-  create_fake_binary "cv"
-  create_fake_binary "civix"
-  create_fake_binary "civistrings"
-  create_fake_binary "coworker"
-
-  echo "✅ Fake CLI tool binaries created." >&3
-}
-
-create_fake_binary() {
+assert_binary_installed() {
   local binary=$1
 
-  cat > "vendor/bin/${binary}" <<EOF
-#!/usr/bin/env bash
-set -eu -o pipefail
-
-case "\${1:-}" in
-  --version|-V|version)
-    echo "${binary} test binary 1.0.0"
-    ;;
-  *)
-    echo "${binary} test binary"
-    ;;
-esac
-EOF
-
-  chmod +x "vendor/bin/${binary}"
+  run_ddev exec command -v "${binary}"
+  assert_success
+  assert_output --partial "vendor/bin/${binary}"
 }
 
-check_binary() {
-  local binary=$1
-  local alias=$2
+assert_cli_command() {
+  local command_name=$1
 
-  simulate_binary_removal "${binary}"
-
-  echo "🔄 Checking ddev ${alias} --version..." >&3
-  if ! ddev "${alias}" --version; then
-    echo "❌ ddev ${alias} failed" >&3
-    exit 1
-  fi
+  run_ddev "${command_name}" --version
+  assert_success
+  [[ -n "${output}" ]]
 }
 
-simulate_binary_removal() {
+assert_missing_binary_error() {
   local binary=$1
+  local command_name=$2
+  local binary_path="${TESTDIR}/vendor/bin/${binary}"
+  local removed_path="${binary_path}.removed"
 
-  mv "./vendor/bin/${binary}" "./vendor/bin/${binary}-removed"
+  mv "${binary_path}" "${removed_path}"
 
-  echo "🔄 Checking if ${binary} command is unavailable after removal..." >&3
+  run_ddev "${command_name}" --version
+  assert_failure
+  assert_output --partial "${binary} is not available"
 
-  if ddev exec command -v "${binary}" >/dev/null; then
-    echo "❌ ${binary} is still available but should have been removed!" >&3
-    restore_binary "${binary}"
-    exit 1
-  fi
-
-  restore_binary "${binary}"
-}
-
-restore_binary() {
-  local binary=$1
-
-  if [ -f "./vendor/bin/${binary}-removed" ]; then
-    mv "./vendor/bin/${binary}-removed" "./vendor/bin/${binary}"
-  fi
+  mv "${removed_path}" "${binary_path}"
 }
 
 health_checks() {
-  set -eu -o pipefail
+  local binary
+  local command_name
 
-  check_binary "cv" "cv"
-  check_binary "civix" "cvx"
-  check_binary "civistrings" "cvstr"
-  check_binary "coworker" "cowkr"
+  for binary in cv civix civistrings coworker; do
+    assert_binary_installed "${binary}"
+  done
 
-  echo "✅ All health checks passed successfully!" >&3
+  for command_name in cv civix cvx civistrings cvstr coworker cowkr; do
+    assert_cli_command "${command_name}"
+  done
+
+  assert_missing_binary_error cv cv
+  assert_missing_binary_error civix civix
+  assert_missing_binary_error civistrings civistrings
+  assert_missing_binary_error coworker coworker
 }
 
 teardown() {
   set -eu -o pipefail
 
-  if [ -n "${TESTDIR:-}" ] && [ -d "${TESTDIR}" ]; then
-    cd "${TESTDIR}" || {
-      printf "❌ Unable to change directory to %s\n" "${TESTDIR}" >&3
-      exit 1
-    }
+  if [[ -d "${TESTDIR}" ]]; then
+    cd "${TESTDIR}" || true
+    ddev delete -Oy "${PROJNAME}" 3>&- >/dev/null 2>&1 || true
+  fi
 
-    echo "🧹 Cleaning up..." >&3
-    ddev delete -Oy "${PROJNAME}" >/dev/null 2>&1 || true
+  if [[ -n "${GITHUB_ENV:-}" ]]; then
+    echo "TESTDIR=${TESTDIR}" >> "${GITHUB_ENV}"
+  else
     rm -rf "${TESTDIR}"
   fi
 }
 
-@test "install from directory 📂" {
+@test "install from directory" {
   set -eu -o pipefail
 
-  cd "${TESTDIR}"
+  echo "Installing add-on from ${DIR}" >&3
+  run_ddev add-on get "${DIR}"
+  assert_success
 
-  echo "⬇️  ddev add-on get ${DIR}" >&3
-  ddev add-on get "${DIR}"
-  ddev restart >/dev/null
+  run_ddev restart -y
+  assert_success
 
   health_checks
-
-  ddev add-on remove "${DIR}"
 }
 
-@test "install from release 🚀" {
+# bats test_tags=release
+@test "install from release" {
   set -eu -o pipefail
 
-  cd "${TESTDIR}"
+  echo "Installing add-on from ${GITHUB_REPO}" >&3
+  run_ddev add-on get "${GITHUB_REPO}"
+  assert_success
 
-  echo "⬇️  ddev add-on get vinugawade/ddev-civicrm-cli-tools" >&3
-  ddev add-on get vinugawade/ddev-civicrm-cli-tools
-  ddev restart >/dev/null
+  run_ddev restart -y
+  assert_success
 
   health_checks
-
-  ddev add-on remove vinugawade/ddev-civicrm-cli-tools
 }
