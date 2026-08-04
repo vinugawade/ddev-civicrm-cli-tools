@@ -55,29 +55,52 @@ start_ddev_project() {
 }
 
 install_cli_tools() {
-  local attempt=1
-  local max_attempts=3
+  local artifact
+  local url
 
-  while [[ "${attempt}" -le "${max_attempts}" ]]; do
-    echo "Installing civicrm/cli-tools (${attempt}/${max_attempts})..." >&3
+  echo "Installing civicrm/cli-tools..." >&3
 
-    run_ddev composer require civicrm/cli-tools --no-interaction --no-progress --prefer-dist
-    if [[ "${status}" -eq 0 ]]; then
-      return 0
-    fi
+  # Composer 2.9+ may force HTTP/3 for the extra PHAR downloads. The
+  # storage redirect intermittently returns curl error 95 in GitHub Actions,
+  # so install the real package without plugins and fetch its real PHARs with
+  # curl over HTTP/1.1.
+  run_ddev composer require \
+    civicrm/cli-tools \
+    --no-interaction \
+    --no-progress \
+    --prefer-dist \
+    --no-plugins
+  assert_success
 
-    echo "${output}" >&3
+  run_ddev exec --raw mkdir -p vendor/civicrm/cli-tools/extern
+  assert_success
 
-    if [[ "${attempt}" -lt "${max_attempts}" ]]; then
-      ddev composer clear-cache 3>&- >/dev/null 2>&1 || true
-      sleep 5
-    fi
+  for artifact in cv.phar civix.phar coworker.phar civistrings.phar; do
+    run_ddev exec --raw php -r \
+      '$config = json_decode(file_get_contents("vendor/civicrm/cli-tools/composer.json"), true, 512, JSON_THROW_ON_ERROR); echo $config["extra"]["downloads"][$argv[1]]["url"];' \
+      "${artifact}"
+    assert_success
+    url="${output}"
 
-    attempt=$((attempt + 1))
+    echo "Downloading ${artifact} over HTTP/1.1..." >&3
+    run_ddev exec --raw curl \
+      --http1.1 \
+      --fail \
+      --location \
+      --silent \
+      --show-error \
+      --retry 3 \
+      --retry-all-errors \
+      --retry-delay 2 \
+      --connect-timeout 10 \
+      --max-time 120 \
+      "${url}" \
+      --output "vendor/civicrm/cli-tools/extern/${artifact}"
+    assert_success
+
+    run_ddev exec --raw chmod +x "vendor/civicrm/cli-tools/extern/${artifact}"
+    assert_success
   done
-
-  echo "Unable to install the real civicrm/cli-tools package after ${max_attempts} attempts." >&3
-  return 1
 }
 
 assert_binary_installed() {
